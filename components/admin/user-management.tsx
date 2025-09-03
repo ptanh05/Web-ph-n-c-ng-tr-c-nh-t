@@ -1,12 +1,25 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -15,31 +28,66 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { UserPlus, Edit, Trash2, Search } from "lucide-react"
-import { mockUsers } from "@/lib/mock-data"
-import type { User } from "@/lib/types"
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UserPlus, Edit, Trash2, Search, Download } from "lucide-react";
+import { mockUsers } from "@/lib/mock-data";
+import type { User } from "@/lib/types";
 
 export function AdminUserManagement() {
-  const [users, setUsers] = useState<User[]>(mockUsers)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
     role: "student" as "admin" | "teacher" | "student",
     class: "",
     phone: "",
-  })
+  });
+
+  const exportUsersToCSV = (data: User[]) => {
+    const headers = ["Họ và tên", "Email", "Vai trò", "Lớp", "Số điện thoại"];
+    const rows = data.map((u) => [
+      u.name ?? "",
+      u.email ?? "",
+      getRoleLabel(u.role),
+      u.class ?? "",
+      u.phone ?? "",
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "users.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.class?.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      user.class?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleAddUser = () => {
     const user: User = {
@@ -47,59 +95,61 @@ export function AdminUserManagement() {
       ...newUser,
       createdAt: new Date(),
       updatedAt: new Date(),
-    }
-    setUsers([...users, user])
-    setNewUser({ name: "", email: "", role: "student", class: "", phone: "" })
-    setIsAddDialogOpen(false)
-  }
+    };
+    setUsers([...users, user]);
+    setNewUser({ name: "", email: "", role: "student", class: "", phone: "" });
+    setIsAddDialogOpen(false);
+  };
 
   const handleEditUser = (user: User) => {
-    setEditingUser(user)
+    setEditingUser(user);
     setNewUser({
       name: user.name,
       email: user.email,
       role: user.role,
       class: user.class || "",
       phone: user.phone || "",
-    })
-  }
+    });
+  };
 
   const handleUpdateUser = () => {
-    if (!editingUser) return
+    if (!editingUser) return;
 
     const updatedUsers = users.map((user) =>
-      user.id === editingUser.id ? { ...user, ...newUser, updatedAt: new Date() } : user,
-    )
-    setUsers(updatedUsers)
-    setEditingUser(null)
-    setNewUser({ name: "", email: "", role: "student", class: "", phone: "" })
-  }
+      user.id === editingUser.id
+        ? { ...user, ...newUser, updatedAt: new Date() }
+        : user
+    );
+    setUsers(updatedUsers);
+    setEditingUser(null);
+    setNewUser({ name: "", email: "", role: "student", class: "", phone: "" });
+  };
 
   const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter((user) => user.id !== userId))
-  }
+    setUsers(users.filter((user) => user.id !== userId));
+  };
 
   const getRoleLabel = (role: string) => {
     const roles = {
       admin: "Quản trị viên",
       teacher: "Giáo viên",
       student: "Học sinh",
-    }
-    return roles[role as keyof typeof roles] || role
-  }
+    };
+    return roles[role as keyof typeof roles] || role;
+  };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case "admin":
-        return "destructive"
+        return "destructive";
       case "teacher":
-        return "default"
+        return "default";
       case "student":
-        return "secondary"
+        return "secondary";
       default:
-        return "secondary"
+        return "secondary";
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -111,7 +161,18 @@ export function AdminUserManagement() {
                 <UserPlus className="w-5 h-5" />
                 Quản lý người dùng
               </CardTitle>
-              <CardDescription>Thêm, sửa, xóa người dùng trong hệ thống</CardDescription>
+              <CardDescription>
+                Thêm, sửa, xóa người dùng trong hệ thống
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => exportUsersToCSV(filteredUsers)}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Xuất CSV
+              </Button>
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
@@ -123,7 +184,9 @@ export function AdminUserManagement() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Thêm người dùng mới</DialogTitle>
-                  <DialogDescription>Nhập thông tin để tạo tài khoản mới trong hệ thống</DialogDescription>
+                  <DialogDescription>
+                    Nhập thông tin để tạo tài khoản mới trong hệ thống
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
@@ -131,7 +194,9 @@ export function AdminUserManagement() {
                     <Input
                       id="name"
                       value={newUser.name}
-                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, name: e.target.value })
+                      }
                       placeholder="Nhập họ và tên"
                     />
                   </div>
@@ -141,7 +206,9 @@ export function AdminUserManagement() {
                       id="email"
                       type="email"
                       value={newUser.email}
-                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, email: e.target.value })
+                      }
                       placeholder="example@school.edu.vn"
                     />
                   </div>
@@ -149,7 +216,9 @@ export function AdminUserManagement() {
                     <Label htmlFor="role">Vai trò</Label>
                     <Select
                       value={newUser.role}
-                      onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
+                      onValueChange={(value: any) =>
+                        setNewUser({ ...newUser, role: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn vai trò" />
@@ -166,7 +235,9 @@ export function AdminUserManagement() {
                     <Input
                       id="class"
                       value={newUser.class}
-                      onChange={(e) => setNewUser({ ...newUser, class: e.target.value })}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, class: e.target.value })
+                      }
                       placeholder="12A1"
                     />
                   </div>
@@ -175,7 +246,9 @@ export function AdminUserManagement() {
                     <Input
                       id="phone"
                       value={newUser.phone}
-                      onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, phone: e.target.value })
+                      }
                       placeholder="0901234567"
                     />
                   </div>
@@ -222,7 +295,9 @@ export function AdminUserManagement() {
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>{getRoleLabel(user.role)}</Badge>
+                      <Badge variant={getRoleBadgeVariant(user.role)}>
+                        {getRoleLabel(user.role)}
+                      </Badge>
                     </TableCell>
                     <TableCell>{user.class || "-"}</TableCell>
                     <TableCell>{user.phone || "-"}</TableCell>
@@ -230,14 +305,20 @@ export function AdminUserManagement() {
                       <div className="flex items-center justify-end gap-2">
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => handleEditUser(user)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditUser(user)}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
                               <DialogTitle>Chỉnh sửa người dùng</DialogTitle>
-                              <DialogDescription>Cập nhật thông tin người dùng</DialogDescription>
+                              <DialogDescription>
+                                Cập nhật thông tin người dùng
+                              </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
                               <div className="grid gap-2">
@@ -245,7 +326,12 @@ export function AdminUserManagement() {
                                 <Input
                                   id="edit-name"
                                   value={newUser.name}
-                                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                                  onChange={(e) =>
+                                    setNewUser({
+                                      ...newUser,
+                                      name: e.target.value,
+                                    })
+                                  }
                                 />
                               </div>
                               <div className="grid gap-2">
@@ -254,22 +340,35 @@ export function AdminUserManagement() {
                                   id="edit-email"
                                   type="email"
                                   value={newUser.email}
-                                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                                  onChange={(e) =>
+                                    setNewUser({
+                                      ...newUser,
+                                      email: e.target.value,
+                                    })
+                                  }
                                 />
                               </div>
                               <div className="grid gap-2">
                                 <Label htmlFor="edit-role">Vai trò</Label>
                                 <Select
                                   value={newUser.role}
-                                  onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
+                                  onValueChange={(value: any) =>
+                                    setNewUser({ ...newUser, role: value })
+                                  }
                                 >
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="student">Học sinh</SelectItem>
-                                    <SelectItem value="teacher">Giáo viên</SelectItem>
-                                    <SelectItem value="admin">Quản trị viên</SelectItem>
+                                    <SelectItem value="student">
+                                      Học sinh
+                                    </SelectItem>
+                                    <SelectItem value="teacher">
+                                      Giáo viên
+                                    </SelectItem>
+                                    <SelectItem value="admin">
+                                      Quản trị viên
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -278,20 +377,34 @@ export function AdminUserManagement() {
                                 <Input
                                   id="edit-class"
                                   value={newUser.class}
-                                  onChange={(e) => setNewUser({ ...newUser, class: e.target.value })}
+                                  onChange={(e) =>
+                                    setNewUser({
+                                      ...newUser,
+                                      class: e.target.value,
+                                    })
+                                  }
                                 />
                               </div>
                               <div className="grid gap-2">
-                                <Label htmlFor="edit-phone">Số điện thoại</Label>
+                                <Label htmlFor="edit-phone">
+                                  Số điện thoại
+                                </Label>
                                 <Input
                                   id="edit-phone"
                                   value={newUser.phone}
-                                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                                  onChange={(e) =>
+                                    setNewUser({
+                                      ...newUser,
+                                      phone: e.target.value,
+                                    })
+                                  }
                                 />
                               </div>
                             </div>
                             <DialogFooter>
-                              <Button onClick={handleUpdateUser}>Cập nhật</Button>
+                              <Button onClick={handleUpdateUser}>
+                                Cập nhật
+                              </Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
@@ -314,5 +427,5 @@ export function AdminUserManagement() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

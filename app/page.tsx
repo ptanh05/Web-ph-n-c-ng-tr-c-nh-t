@@ -1,9 +1,9 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Bell, Clock, MapPin } from "lucide-react"
+import { Calendar, Bell, Clock, MapPin, GraduationCap } from "lucide-react"
 import { mockDutySchedules, mockNotifications } from "@/lib/mock-data"
 import { getUpcomingDuties, formatShift } from "@/lib/duty-utils"
 import { ProtectedRoute } from "@/components/auth/protected-route"
@@ -121,10 +121,79 @@ function DashboardContent() {
   )
 }
 
-export default function HomePage() {
+function WelcomeContent() {
   return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <Card className="w-full max-w-2xl shadow-2xl border-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+        <CardHeader className="text-center pb-6">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <GraduationCap className="w-10 h-10 text-white" />
+          </div>
+          <CardTitle className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+            Hệ thống quản lý trực nhật
+          </CardTitle>
+          <CardDescription className="text-xl text-gray-600 dark:text-gray-300">
+            Quản lý lịch trực nhật một cách thông minh và hiệu quả
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="px-8 pb-8">
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-lg text-gray-700 dark:text-gray-200 mb-6">
+                Chào mừng bạn đến với hệ thống quản lý trực nhật. 
+                Vui lòng đăng nhập hoặc đăng ký để tiếp tục.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Link href="/login">
+                <Button className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]">
+                  Đăng nhập
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]">
+                  Đăng ký
+                </Button>
+              </Link>
+            </div>
+
+            <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-xl border border-blue-100 dark:border-blue-800">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center justify-center">
+                <Calendar className="w-4 h-4 mr-2" />
+                Tài khoản demo có sẵn
+              </p>
+              <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300 text-center">
+                <p><strong>Admin:</strong> admin@school.edu.vn / <strong>Mật khẩu:</strong> 123456</p>
+                <p><strong>Học sinh:</strong> tuan.le@student.edu.vn / <strong>Mật khẩu:</strong> 123456</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
+}
+
+export default function HomePage() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (user) {
+    return (
+      <ProtectedRoute>
+        <DashboardContent />
+      </ProtectedRoute>
+    )
+  }
+
+  return <WelcomeContent />
 }
