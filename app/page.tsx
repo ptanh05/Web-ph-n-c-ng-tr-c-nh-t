@@ -9,14 +9,16 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Bell, Clock, MapPin, GraduationCap } from "lucide-react";
+import { Calendar, Bell, Clock, MapPin, GraduationCap, X } from "lucide-react";
 import { getUpcomingDuties, formatShift } from "@/lib/duty-utils";
 import { ProtectedRoute } from "@/components/auth/protected-route";
+import { useEffect, useMemo, useState } from "react";
+import { DutyCalendar } from "@/components/calendar/duty-calendar";
+import { DataManagementContent } from "@/app/data-management/page";
 import { Header } from "@/components/layout/header";
 import { Navigation } from "@/components/layout/navigation";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 
 function DashboardContent() {
   const { user } = useAuth();
@@ -48,6 +50,19 @@ function DashboardContent() {
 
   const upcomingDuties = getUpcomingDuties(userSchedules);
   const unreadNotifications: any[] = [];
+  const [homeSection, setHomeSection] = useState<"none" | "calendar" | "data">(
+    "none"
+  );
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      const section = e?.detail?.section as "calendar" | "data";
+      if (section) setHomeSection(section);
+    };
+    window.addEventListener("home:switch-section", handler as any);
+    return () =>
+      window.removeEventListener("home:switch-section", handler as any);
+  }, []);
 
   const [assigneesText, setAssigneesText] = useState("");
   const [startDate, setStartDate] = useState<string>("");
@@ -202,6 +217,34 @@ function DashboardContent() {
             </div>
           </CardContent>
         </Card>
+
+        {homeSection === "calendar" && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Lịch trực
+              </h3>
+              <Button variant="outline" onClick={() => setHomeSection("none")}>
+                <X className="w-4 h-4 mr-2" /> Ẩn
+              </Button>
+            </div>
+            <DutyCalendar />
+          </div>
+        )}
+
+        {homeSection === "data" && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Quản lý dữ liệu
+              </h3>
+              <Button variant="outline" onClick={() => setHomeSection("none")}>
+                <X className="w-4 h-4 mr-2" /> Ẩn
+              </Button>
+            </div>
+            <DataManagementContent />
+          </div>
+        )}
 
         <Card className="mb-8">
           <CardHeader>

@@ -1,85 +1,118 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, Download, Database, FileText, Users, Calendar } from "lucide-react"
-import { useAuth } from "@/lib/auth-context"
-import ProtectedRoute from "@/components/auth/protected-route"
-import { toast } from "@/hooks/use-toast"
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Upload,
+  Download,
+  Database,
+  FileText,
+  Users,
+  Calendar,
+  X,
+} from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import ProtectedRoute from "@/components/auth/protected-route";
+import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
-function DataManagementContent() {
-  const { user } = useAuth()
-  const [importData, setImportData] = useState("")
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+export function DataManagementContent() {
+  const { user } = useAuth();
+  const [importData, setImportData] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
-      setSelectedFile(file)
-      const reader = new FileReader()
+      setSelectedFile(file);
+      const reader = new FileReader();
       reader.onload = (e) => {
-        const content = e.target?.result as string
-        setImportData(content)
-      }
-      reader.readAsText(file)
+        const content = e.target?.result as string;
+        setImportData(content);
+      };
+      reader.readAsText(file);
     }
-  }
+  };
 
   const processCSVData = () => {
     if (!importData) {
-      toast({ title: "Lỗi", description: "Vui lòng chọn file hoặc nhập dữ liệu" })
-      return
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng chọn file hoặc nhập dữ liệu",
+      });
+      return;
     }
 
     try {
-      const lines = importData.split("\n")
-      const headers = lines[0].split(",")
+      const lines = importData.split("\n");
+      const headers = lines[0].split(",");
       const data = lines.slice(1).map((line) => {
-        const values = line.split(",")
+        const values = line.split(",");
         return headers.reduce((obj, header, index) => {
-          obj[header.trim()] = values[index]?.trim()
-          return obj
-        }, {} as any)
-      })
+          obj[header.trim()] = values[index]?.trim();
+          return obj;
+        }, {} as any);
+      });
 
-      console.log("[v0] Processed CSV data:", data)
-      toast({ title: "Thành công", description: `Đã xử lý ${data.length} bản ghi` })
+      console.log("[v0] Processed CSV data:", data);
+      toast({
+        title: "Thành công",
+        description: `Đã xử lý ${data.length} bản ghi`,
+      });
     } catch (error) {
-      toast({ title: "Lỗi", description: "Không thể xử lý dữ liệu CSV" })
+      toast({ title: "Lỗi", description: "Không thể xử lý dữ liệu CSV" });
     }
-  }
+  };
 
   const exportData = (type: string) => {
     const data = {
       users: JSON.parse(localStorage.getItem("users") || "[]"),
       schedules: JSON.parse(localStorage.getItem("schedules") || "[]"),
       notifications: JSON.parse(localStorage.getItem("notifications") || "[]"),
-    }
+    };
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `duty-schedule-backup-${new Date().toISOString().split("T")[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `duty-schedule-backup-${
+      new Date().toISOString().split("T")[0]
+    }.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 
-    toast({ title: "Thành công", description: "Đã xuất dữ liệu thành công" })
-  }
+    toast({ title: "Thành công", description: "Đã xuất dữ liệu thành công" });
+  };
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Quản lý dữ liệu</h1>
-        <p className="text-gray-600 mt-2">Nhập và xuất dữ liệu theo nhiều cách khác nhau</p>
+        <p className="text-gray-600 mt-2">
+          Nhập và xuất dữ liệu theo nhiều cách khác nhau
+        </p>
       </div>
 
       <Tabs defaultValue="import" className="space-y-6">
@@ -98,7 +131,10 @@ function DataManagementContent() {
                   <FileText className="h-5 w-5" />
                   Import từ CSV/Excel
                 </CardTitle>
-                <CardDescription>Tải lên file CSV hoặc Excel chứa dữ liệu người dùng và lịch trực</CardDescription>
+                <CardDescription>
+                  Tải lên file CSV hoặc Excel chứa dữ liệu người dùng và lịch
+                  trực
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -111,7 +147,11 @@ function DataManagementContent() {
                     className="mt-1"
                   />
                 </div>
-                {selectedFile && <div className="text-sm text-gray-600">File đã chọn: {selectedFile.name}</div>}
+                {selectedFile && (
+                  <div className="text-sm text-gray-600">
+                    File đã chọn: {selectedFile.name}
+                  </div>
+                )}
                 <Button onClick={processCSVData} className="w-full">
                   <Upload className="h-4 w-4 mr-2" />
                   Xử lý dữ liệu
@@ -125,7 +165,9 @@ function DataManagementContent() {
                   <Database className="h-5 w-5" />
                   Import từ JSON
                 </CardTitle>
-                <CardDescription>Nhập dữ liệu từ file JSON hoặc dán trực tiếp</CardDescription>
+                <CardDescription>
+                  Nhập dữ liệu từ file JSON hoặc dán trực tiếp
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -142,11 +184,14 @@ function DataManagementContent() {
                 <Button
                   onClick={() => {
                     try {
-                      const data = JSON.parse(importData)
-                      console.log("[v0] Imported JSON data:", data)
-                      toast({ title: "Thành công", description: "Đã nhập dữ liệu JSON" })
+                      const data = JSON.parse(importData);
+                      console.log("[v0] Imported JSON data:", data);
+                      toast({
+                        title: "Thành công",
+                        description: "Đã nhập dữ liệu JSON",
+                      });
                     } catch {
-                      toast({ title: "Lỗi", description: "JSON không hợp lệ" })
+                      toast({ title: "Lỗi", description: "JSON không hợp lệ" });
                     }
                   }}
                   className="w-full"
@@ -167,7 +212,9 @@ function DataManagementContent() {
                   <Users className="h-5 w-5" />
                   Xuất người dùng
                 </CardTitle>
-                <CardDescription>Xuất danh sách tất cả người dùng</CardDescription>
+                <CardDescription>
+                  Xuất danh sách tất cả người dùng
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button onClick={() => exportData("users")} className="w-full">
@@ -183,10 +230,15 @@ function DataManagementContent() {
                   <Calendar className="h-5 w-5" />
                   Xuất lịch trực
                 </CardTitle>
-                <CardDescription>Xuất tất cả lịch trực đã lên kế hoạch</CardDescription>
+                <CardDescription>
+                  Xuất tất cả lịch trực đã lên kế hoạch
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => exportData("schedules")} className="w-full">
+                <Button
+                  onClick={() => exportData("schedules")}
+                  className="w-full"
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Xuất Schedules
                 </Button>
@@ -215,17 +267,28 @@ function DataManagementContent() {
           <Card>
             <CardHeader>
               <CardTitle>API Integration</CardTitle>
-              <CardDescription>Kết nối với hệ thống bên ngoài qua API</CardDescription>
+              <CardDescription>
+                Kết nối với hệ thống bên ngoài qua API
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="api-url">API URL</Label>
-                  <Input id="api-url" placeholder="https://api.example.com/data" className="mt-1" />
+                  <Input
+                    id="api-url"
+                    placeholder="https://api.example.com/data"
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="api-key">API Key</Label>
-                  <Input id="api-key" type="password" placeholder="Nhập API key" className="mt-1" />
+                  <Input
+                    id="api-key"
+                    type="password"
+                    placeholder="Nhập API key"
+                    className="mt-1"
+                  />
                 </div>
               </div>
               <div>
@@ -253,7 +316,9 @@ function DataManagementContent() {
           <Card>
             <CardHeader>
               <CardTitle>Nhập dữ liệu thủ công</CardTitle>
-              <CardDescription>Tạo người dùng và lịch trực mới bằng form</CardDescription>
+              <CardDescription>
+                Tạo người dùng và lịch trực mới bằng form
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -261,11 +326,20 @@ function DataManagementContent() {
                   <h3 className="font-semibold">Thêm người dùng mới</h3>
                   <div>
                     <Label htmlFor="user-name">Họ tên</Label>
-                    <Input id="user-name" placeholder="Nguyễn Văn A" className="mt-1" />
+                    <Input
+                      id="user-name"
+                      placeholder="Nguyễn Văn A"
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="user-email">Email</Label>
-                    <Input id="user-email" type="email" placeholder="email@example.com" className="mt-1" />
+                    <Input
+                      id="user-email"
+                      type="email"
+                      placeholder="email@example.com"
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="user-role">Vai trò</Label>
@@ -307,7 +381,11 @@ function DataManagementContent() {
                   </div>
                   <div>
                     <Label htmlFor="schedule-location">Địa điểm</Label>
-                    <Input id="schedule-location" placeholder="Cổng chính" className="mt-1" />
+                    <Input
+                      id="schedule-location"
+                      placeholder="Cổng chính"
+                      className="mt-1"
+                    />
                   </div>
                   <Button className="w-full">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -320,13 +398,26 @@ function DataManagementContent() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
 
 export default function DataManagementPage() {
+  const router = useRouter();
   return (
     <ProtectedRoute allowedRoles={["admin", "teacher"]}>
-      <DataManagementContent />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Quản lý dữ liệu
+            </h2>
+            <Button variant="outline" onClick={() => router.push("/")}>
+              <X className="w-4 h-4 mr-2" /> Đóng
+            </Button>
+          </div>
+          <DataManagementContent />
+        </div>
+      </div>
     </ProtectedRoute>
-  )
+  );
 }

@@ -1,58 +1,111 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import { Users, Calendar, Target, Award, AlertTriangle } from "lucide-react"
-import { useAuth } from "@/lib/auth-context"
-import { mockUsers, mockDutySchedules } from "@/lib/mock-data"
-import { calculateDutyStats } from "@/lib/duty-utils"
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { Users, Calendar, Target, Award, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { calculateDutyStats } from "@/lib/duty-utils";
 
 export function ReportsAndStatistics() {
-  const { user } = useAuth()
-  const [selectedClass, setSelectedClass] = useState("all")
+  const { user } = useAuth();
+  const [selectedClass, setSelectedClass] = useState("all");
+  const [duties, setDuties] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
 
-  if (!user) return null
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      try {
+        const qs = user.role === "admin" ? "" : `?userId=${user.id}`;
+        const res = await fetch(`/api/duties${qs}`);
+        const data = await res.json();
+        if (data && data.success) {
+          setDuties(
+            (data.duties || []).map((d: any) => ({
+              ...d,
+              date: new Date(d.date),
+            }))
+          );
+        } else {
+          setDuties([]);
+        }
+      } catch (e) {
+        console.error(e);
+        setDuties([]);
+      }
+    };
+    load();
+  }, [user]);
+
+  if (!user) return null;
 
   // Calculate statistics
-  const allStats = calculateDutyStats(mockDutySchedules)
-  const students = mockUsers.filter((u) => u.role === "student")
-  const classes = [...new Set(students.map((s) => s.class).filter(Boolean))]
+  const allStats = calculateDutyStats(duties);
+  const students = useMemo(
+    () => users.filter((u) => u.role === "student"),
+    [users]
+  );
+  const classes = useMemo(
+    () => [...new Set(students.map((s: any) => s.class).filter(Boolean))],
+    [students]
+  );
 
   // Completion rate by class
   const classStats = classes.map((className) => {
-    const classSchedules = mockDutySchedules.filter((s) => s.user.class === className)
-    const stats = calculateDutyStats(classSchedules)
-    return {
-      class: className,
-      rate: stats.completionRate,
-    }
-  })
+    const classSchedules = duties.filter(
+      (s: any) => s.user?.class === className
+    );
+    const stats = calculateDutyStats(classSchedules);
+    return { class: className, rate: stats.completionRate };
+  });
 
   // Status distribution
   const statusData = [
     { name: "Hoàn thành", value: allStats.completed, color: "#10b981" },
-    { name: "Đã lên lịch", value: mockDutySchedules.filter((s) => s.status === "scheduled").length, color: "#3b82f6" },
+    {
+      name: "Đã lên lịch",
+      value: duties.filter((s: any) => s.status === "scheduled").length,
+      color: "#3b82f6",
+    },
     { name: "Vắng mặt", value: allStats.missed, color: "#ef4444" },
-  ]
+  ];
 
   // Top performers
   const studentPerformance = students
-    .map((student) => {
-      const studentSchedules = mockDutySchedules.filter((s) => s.userId === student.id)
-      const stats = calculateDutyStats(studentSchedules)
-      return {
-        ...student,
-        ...stats,
-      }
+    .map((student: any) => {
+      const studentSchedules = duties.filter(
+        (s: any) => s.userId === student.id
+      );
+      const stats = calculateDutyStats(studentSchedules);
+      return { ...student, ...stats };
     })
-    .sort((a, b) => b.completionRate - a.completionRate)
+    .sort((a, b) => b.completionRate - a.completionRate);
 
-  const topPerformers = studentPerformance.slice(0, 5)
-  const needsAttention = studentPerformance.filter((s) => s.completionRate < 80).slice(0, 3)
+  const topPerformers = studentPerformance.slice(0, 5);
+  const needsAttention = studentPerformance
+    .filter((s: any) => s.completionRate < 80)
+    .slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -69,7 +122,7 @@ export function ReportsAndStatistics() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
-                {classes.map((className) => (
+                {classes.map((className: any) => (
                   <SelectItem key={className} value={className || ""}>
                     {className}
                   </SelectItem>
@@ -97,7 +150,9 @@ export function ReportsAndStatistics() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{allStats.totalScheduled}</div>
+                <div className="text-2xl font-bold">
+                  {allStats.totalScheduled}
+                </div>
               </CardContent>
             </Card>
 
@@ -109,7 +164,9 @@ export function ReportsAndStatistics() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{allStats.completionRate}%</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {allStats.completionRate}%
+                </div>
               </CardContent>
             </Card>
 
@@ -141,7 +198,10 @@ export function ReportsAndStatistics() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }: any) => {
+                        const p = typeof percent === "number" ? percent : 0;
+                        return `${name} ${(p * 100).toFixed(0)}%`;
+                      }}
                     >
                       {statusData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -182,17 +242,27 @@ export function ReportsAndStatistics() {
               <CardContent>
                 <div className="space-y-3">
                   {topPerformers.map((student, index) => (
-                    <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={student.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-blue-600">{index + 1}</span>
+                          <span className="text-xs font-medium text-blue-600">
+                            {index + 1}
+                          </span>
                         </div>
                         <div>
                           <p className="font-medium">{student.name}</p>
-                          <p className="text-sm text-gray-500">Lớp {student.class}</p>
+                          <p className="text-sm text-gray-500">
+                            Lớp {student.class}
+                          </p>
                         </div>
                       </div>
-                      <Badge variant="default" className="bg-green-100 text-green-800">
+                      <Badge
+                        variant="default"
+                        className="bg-green-100 text-green-800"
+                      >
                         {student.completionRate}%
                       </Badge>
                     </div>
@@ -212,12 +282,19 @@ export function ReportsAndStatistics() {
                 <CardContent>
                   <div className="space-y-3">
                     {needsAttention.map((student) => (
-                      <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div
+                        key={student.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div>
                           <p className="font-medium">{student.name}</p>
-                          <p className="text-sm text-gray-500">Lớp {student.class}</p>
+                          <p className="text-sm text-gray-500">
+                            Lớp {student.class}
+                          </p>
                         </div>
-                        <Badge variant="destructive">{student.completionRate}%</Badge>
+                        <Badge variant="destructive">
+                          {student.completionRate}%
+                        </Badge>
                       </div>
                     ))}
                   </div>
@@ -243,15 +320,17 @@ export function ReportsAndStatistics() {
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <h4 className="font-medium">{student.name}</h4>
-                        <p className="text-sm text-gray-500">Lớp {student.class}</p>
+                        <p className="text-sm text-gray-500">
+                          Lớp {student.class}
+                        </p>
                       </div>
                       <Badge
                         variant={
                           student.completionRate >= 90
                             ? "default"
                             : student.completionRate >= 80
-                              ? "secondary"
-                              : "destructive"
+                            ? "secondary"
+                            : "destructive"
                         }
                       >
                         {student.completionRate}%
@@ -260,15 +339,21 @@ export function ReportsAndStatistics() {
 
                     <div className="grid grid-cols-3 gap-4 text-sm text-center">
                       <div>
-                        <div className="font-medium text-blue-600">{student.totalScheduled}</div>
+                        <div className="font-medium text-blue-600">
+                          {student.totalScheduled}
+                        </div>
                         <div className="text-gray-500">Tổng ca</div>
                       </div>
                       <div>
-                        <div className="font-medium text-green-600">{student.completed}</div>
+                        <div className="font-medium text-green-600">
+                          {student.completed}
+                        </div>
                         <div className="text-gray-500">Hoàn thành</div>
                       </div>
                       <div>
-                        <div className="font-medium text-red-600">{student.missed}</div>
+                        <div className="font-medium text-red-600">
+                          {student.missed}
+                        </div>
                         <div className="text-gray-500">Vắng mặt</div>
                       </div>
                     </div>
@@ -280,5 +365,5 @@ export function ReportsAndStatistics() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

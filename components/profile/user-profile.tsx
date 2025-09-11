@@ -1,12 +1,18 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   User,
   Edit,
@@ -30,58 +36,85 @@ import {
   Phone,
   Mail,
   GraduationCap,
-} from "lucide-react"
-import { useAuth } from "@/lib/auth-context"
-import { mockDutySchedules } from "@/lib/mock-data"
-import { calculateDutyStats, formatShift, formatStatus } from "@/lib/duty-utils"
+} from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import {
+  calculateDutyStats,
+  formatShift,
+  formatStatus,
+} from "@/lib/duty-utils";
 
 export function UserProfile() {
-  const { user } = useAuth()
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const { user } = useAuth();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
     class: user?.class || "",
-  })
+  });
 
-  if (!user) return null
+  const [userSchedules, setUserSchedules] = useState<any[]>([]);
 
-  const userSchedules = mockDutySchedules.filter((s) => s.userId === user.id)
-  const stats = calculateDutyStats(userSchedules)
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/duties?userId=${user.id}`);
+        const data = await res.json();
+        if (data && data.success) {
+          setUserSchedules(
+            (data.duties || []).map((d: any) => ({
+              ...d,
+              date: new Date(d.date),
+            }))
+          );
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    load();
+  }, [user]);
+
+  if (!user) return null;
+
+  const stats = calculateDutyStats(userSchedules);
 
   // Recent duty history (last 10)
-  const recentDuties = userSchedules.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10)
+  const recentDuties = userSchedules
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 10);
 
   const handleSaveProfile = () => {
     // In a real app, this would update the user in the database
-    console.log("Saving profile:", editForm)
-    setIsEditDialogOpen(false)
-  }
+    console.log("Saving profile:", editForm);
+    setIsEditDialogOpen(false);
+  };
 
   const getRoleLabel = (role: string) => {
     const roles = {
       admin: "Quản trị viên",
       teacher: "Giáo viên",
       student: "Học sinh",
-    }
-    return roles[role as keyof typeof roles] || role
-  }
+    };
+    return roles[role as keyof typeof roles] || role;
+  };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "completed":
-        return "default"
+        return "default";
       case "scheduled":
-        return "secondary"
+        return "secondary";
       case "missed":
-        return "destructive"
+        return "destructive";
       case "excused":
-        return "outline"
+        return "outline";
       default:
-        return "secondary"
+        return "secondary";
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -122,7 +155,9 @@ export function UserProfile() {
                   </div>
 
                   <div className="text-center space-y-2">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{user.name}</h3>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      {user.name}
+                    </h3>
                     <Badge variant="outline">{getRoleLabel(user.role)}</Badge>
                   </div>
                 </div>
@@ -130,25 +165,34 @@ export function UserProfile() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <Mail className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {user.email}
+                    </span>
                   </div>
 
                   {user.phone && (
                     <div className="flex items-center gap-3">
                       <Phone className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">{user.phone}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        {user.phone}
+                      </span>
                     </div>
                   )}
 
                   {user.class && (
                     <div className="flex items-center gap-3">
                       <GraduationCap className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">Lớp {user.class}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Lớp {user.class}
+                      </span>
                     </div>
                   )}
                 </div>
 
-                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <Dialog
+                  open={isEditDialogOpen}
+                  onOpenChange={setIsEditDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <Button className="w-full bg-transparent" variant="outline">
                       <Edit className="w-4 h-4 mr-2" />
@@ -158,7 +202,9 @@ export function UserProfile() {
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Chỉnh sửa thông tin cá nhân</DialogTitle>
-                      <DialogDescription>Cập nhật thông tin tài khoản của bạn</DialogDescription>
+                      <DialogDescription>
+                        Cập nhật thông tin tài khoản của bạn
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
@@ -166,7 +212,9 @@ export function UserProfile() {
                         <Input
                           id="name"
                           value={editForm.name}
-                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, name: e.target.value })
+                          }
                         />
                       </div>
                       <div className="grid gap-2">
@@ -175,7 +223,9 @@ export function UserProfile() {
                           id="email"
                           type="email"
                           value={editForm.email}
-                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, email: e.target.value })
+                          }
                         />
                       </div>
                       <div className="grid gap-2">
@@ -183,7 +233,9 @@ export function UserProfile() {
                         <Input
                           id="phone"
                           value={editForm.phone}
-                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, phone: e.target.value })
+                          }
                         />
                       </div>
                       {user.role === "student" && (
@@ -192,7 +244,12 @@ export function UserProfile() {
                           <Input
                             id="class"
                             value={editForm.class}
-                            onChange={(e) => setEditForm({ ...editForm, class: e.target.value })}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                class: e.target.value,
+                              })
+                            }
                           />
                         </div>
                       )}
@@ -213,32 +270,50 @@ export function UserProfile() {
                     <BarChart3 className="w-5 h-5" />
                     Thống kê trực nhật
                   </CardTitle>
-                  <CardDescription>Tổng quan về hoạt động trực nhật của bạn</CardDescription>
+                  <CardDescription>
+                    Tổng quan về hoạt động trực nhật của bạn
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
                       <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-blue-600">{stats.totalScheduled}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Tổng ca trực</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {stats.totalScheduled}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        Tổng ca trực
+                      </div>
                     </div>
 
                     <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg">
                       <Trophy className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Hoàn thành</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {stats.completed}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        Hoàn thành
+                      </div>
                     </div>
 
                     <div className="text-center p-4 bg-orange-50 dark:bg-orange-950 rounded-lg">
                       <Target className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-orange-600">{stats.completionRate}%</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Tỷ lệ hoàn thành</div>
+                      <div className="text-2xl font-bold text-orange-600">
+                        {stats.completionRate}%
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        Tỷ lệ hoàn thành
+                      </div>
                     </div>
 
                     <div className="text-center p-4 bg-red-50 dark:bg-red-950 rounded-lg">
                       <Clock className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-red-600">{stats.missed}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Vắng mặt</div>
+                      <div className="text-2xl font-bold text-red-600">
+                        {stats.missed}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        Vắng mặt
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -256,19 +331,30 @@ export function UserProfile() {
                 <CardContent>
                   <div className="space-y-3">
                     {recentDuties.slice(0, 5).map((duty) => (
-                      <div key={duty.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div
+                        key={duty.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline">{formatShift(duty.shift)}</Badge>
-                            <span className="text-sm text-gray-500">{duty.date.toLocaleDateString("vi-VN")}</span>
+                            <Badge variant="outline">
+                              {formatShift(duty.shift)}
+                            </Badge>
+                            <span className="text-sm text-gray-500">
+                              {duty.date.toLocaleDateString("vi-VN")}
+                            </span>
                           </div>
-                          <p className="font-medium text-gray-900 dark:text-white">{duty.task}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {duty.task}
+                          </p>
                           <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
                             <MapPin className="w-3 h-3" />
                             {duty.location}
                           </div>
                         </div>
-                        <Badge variant={getStatusBadgeVariant(duty.status)}>{formatStatus(duty.status)}</Badge>
+                        <Badge variant={getStatusBadgeVariant(duty.status)}>
+                          {formatStatus(duty.status)}
+                        </Badge>
                       </div>
                     ))}
                   </div>
@@ -291,7 +377,10 @@ export function UserProfile() {
             <CardContent>
               <div className="space-y-4">
                 {recentDuties.map((duty) => (
-                  <div key={duty.id} className="flex items-start gap-4 p-4 border rounded-lg">
+                  <div
+                    key={duty.id}
+                    className="flex items-start gap-4 p-4 border rounded-lg"
+                  >
                     <div className="flex-shrink-0">
                       <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
                         <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -300,8 +389,12 @@ export function UserProfile() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{duty.task}</h4>
-                        <Badge variant={getStatusBadgeVariant(duty.status)}>{formatStatus(duty.status)}</Badge>
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {duty.task}
+                        </h4>
+                        <Badge variant={getStatusBadgeVariant(duty.status)}>
+                          {formatStatus(duty.status)}
+                        </Badge>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-600 dark:text-gray-300">
@@ -319,7 +412,11 @@ export function UserProfile() {
                         </div>
                       </div>
 
-                      {duty.notes && <p className="text-sm text-gray-500 mt-2">{duty.notes}</p>}
+                      {duty.notes && (
+                        <p className="text-sm text-gray-500 mt-2">
+                          {duty.notes}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -333,13 +430,17 @@ export function UserProfile() {
           <Card>
             <CardHeader>
               <CardTitle>Cài đặt tài khoản</CardTitle>
-              <CardDescription>Quản lý cài đặt và tùy chọn tài khoản</CardDescription>
+              <CardDescription>
+                Quản lý cài đặt và tùy chọn tài khoản
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="notifications">Thông báo email</Label>
-                  <p className="text-sm text-gray-500 mb-2">Nhận thông báo về lịch trực qua email</p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Nhận thông báo về lịch trực qua email
+                  </p>
                   <Button variant="outline" size="sm">
                     Bật thông báo
                   </Button>
@@ -347,7 +448,9 @@ export function UserProfile() {
 
                 <div>
                   <Label htmlFor="reminders">Nhắc nhở</Label>
-                  <p className="text-sm text-gray-500 mb-2">Nhận nhắc nhở trước ca trực</p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Nhận nhắc nhở trước ca trực
+                  </p>
                   <Button variant="outline" size="sm">
                     Cài đặt nhắc nhở
                   </Button>
@@ -355,7 +458,9 @@ export function UserProfile() {
 
                 <div>
                   <Label htmlFor="privacy">Quyền riêng tư</Label>
-                  <p className="text-sm text-gray-500 mb-2">Quản lý quyền riêng tư và bảo mật</p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Quản lý quyền riêng tư và bảo mật
+                  </p>
                   <Button variant="outline" size="sm">
                     Cài đặt quyền riêng tư
                   </Button>
@@ -366,7 +471,9 @@ export function UserProfile() {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="password">Đổi mật khẩu</Label>
-                    <p className="text-sm text-gray-500 mb-2">Cập nhật mật khẩu để bảo mật tài khoản</p>
+                    <p className="text-sm text-gray-500 mb-2">
+                      Cập nhật mật khẩu để bảo mật tài khoản
+                    </p>
                     <Button variant="outline" size="sm">
                       Đổi mật khẩu
                     </Button>
@@ -374,7 +481,9 @@ export function UserProfile() {
 
                   <div>
                     <Label htmlFor="export">Xuất dữ liệu</Label>
-                    <p className="text-sm text-gray-500 mb-2">Tải xuống dữ liệu cá nhân của bạn</p>
+                    <p className="text-sm text-gray-500 mb-2">
+                      Tải xuống dữ liệu cá nhân của bạn
+                    </p>
                     <Button variant="outline" size="sm">
                       Xuất dữ liệu
                     </Button>
@@ -386,5 +495,5 @@ export function UserProfile() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
