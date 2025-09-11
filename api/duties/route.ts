@@ -20,47 +20,8 @@ const updateDutySchema = dutySchema.partial().extend({
   id: z.string().min(1, 'ID không được để trống'),
 })
 
-// Mock database
-let duties = [
-  {
-    id: '1',
-    userId: '2',
-    user: {
-      id: '2',
-      name: 'Tuan Le',
-      email: 'tuan.le@student.edu.vn',
-      role: 'student',
-      class: '12A1',
-    },
-    date: new Date('2024-01-15T07:00:00Z'),
-    shift: 'morning',
-    location: 'Sân trường',
-    task: 'Quét sân trường',
-    status: 'completed',
-    notes: 'Hoàn thành tốt',
-    createdAt: new Date('2024-01-10T00:00:00Z'),
-    updatedAt: new Date('2024-01-15T07:00:00Z'),
-  },
-  {
-    id: '2',
-    userId: '2',
-    user: {
-      id: '2',
-      name: 'Tuan Le',
-      email: 'tuan.le@student.edu.vn',
-      role: 'student',
-      class: '12A1',
-    },
-    date: new Date('2024-01-20T07:00:00Z'),
-    shift: 'afternoon',
-    location: 'Lớp học 12A1',
-    task: 'Lau bảng, dọn lớp',
-    status: 'scheduled',
-    notes: undefined,
-    createdAt: new Date('2024-01-10T00:00:00Z'),
-    updatedAt: new Date('2024-01-10T00:00:00Z'),
-  },
-]
+// In-memory store (khởi tạo rỗng, không còn dữ liệu mock)
+let duties: any[] = []
 
 // GET - Lấy danh sách lịch trực
 export async function GET(request: NextRequest) {
@@ -123,39 +84,53 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
-    // Validate input
-    const validationResult = dutySchema.safeParse(body)
-    if (!validationResult.success) {
+
+    // Hỗ trợ tạo 1 bản ghi hoặc hàng loạt
+    const items = Array.isArray(body) ? body : [body]
+
+    const created: any[] = []
+    const errors: any[] = []
+
+    for (const item of items) {
+      const validationResult = dutySchema.safeParse(item)
+      if (!validationResult.success) {
+        errors.push(validationResult.error.errors)
+        continue
+      }
+
+      const dutyData = validationResult.data
+      const newDuty = {
+        id: (Date.now() + Math.floor(Math.random() * 100000)).toString(),
+        ...dutyData,
+        date: new Date(dutyData.date),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      duties.push(newDuty)
+      created.push(newDuty)
+    }
+
+    if (created.length === 0) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: 'Dữ liệu không hợp lệ',
-          details: validationResult.error.errors 
+          details: errors,
         },
         { status: 400 }
       )
     }
 
-    const dutyData = validationResult.data
-
-    // Create new duty
-    const newDuty = {
-      id: Date.now().toString(),
-      ...dutyData,
-      date: new Date(dutyData.date),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-
-    // Add to database
-    duties.push(newDuty)
-
-    return NextResponse.json({
-      success: true,
-      duty: newDuty,
-      message: 'Tạo lịch trực thành công'
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        success: true,
+        duties: created,
+        message: Array.isArray(body)
+          ? `Tạo ${created.length} lịch trực thành công${errors.length ? `, ${errors.length} bản ghi lỗi` : ''}`
+          : 'Tạo lịch trực thành công',
+      },
+      { status: 201 }
+    )
 
   } catch (error) {
     console.error('Create duty error:', error)
